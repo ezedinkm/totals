@@ -477,9 +477,10 @@ class RedesignBudgetPageState extends State<RedesignBudgetPage> {
     final hasCatchAllBudget = budgets.any((b) => b.appliesToAllExpenses);
     final unbudgetedTxns = hasCatchAllBudget
         ? <Transaction>[]
-        : debits
-            .where((t) => !budgets.any((b) => b.includesCategory(t.categoryId)))
-            .toList();
+        : debits.where((t) {
+            if (tp.isSelfTransfer(t)) return false;
+            return !budgetedCatIds.contains(t.categoryId);
+          }).toList();
     final unbudgetedAmount = unbudgetedTxns.fold(0.0, (s, t) => s + t.amount);
 
     return RefreshIndicator(
@@ -1302,6 +1303,7 @@ class _UnbudgetedTransactionsPage extends StatelessWidget {
             final dt = DateTime.tryParse(t.time!);
             if (dt == null) return false;
             if (dt.isBefore(monthStart) || !dt.isBefore(monthEnd)) return false;
+            if (provider.isSelfTransfer(t)) return false;
             return !budgetedCategoryIds.contains(t.categoryId);
           }).toList()
             ..sort((a, b) {

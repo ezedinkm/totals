@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:kenat/kenat.dart';
+import 'package:totals/providers/theme_provider.dart';
+import 'package:totals/theme/app_calendar_option.dart';
 import 'package:totals/_redesign/theme/app_colors.dart';
 import 'package:totals/_redesign/widgets/transaction_category_sheet.dart';
 import 'package:totals/_redesign/widgets/transaction_details_sheet.dart';
@@ -81,10 +84,21 @@ class _TodaysTransactionsPageState extends State<TodaysTransactionsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final isEC = context.watch<ThemeProvider>().appCalendar == AppCalendarOption.ethiopian;
 
     return Consumer<TransactionProvider>(
       builder: (context, provider, _) {
         final transactions = provider.todayTransactions;
+
+        String pageTitle;
+        if (_isSelecting) {
+          pageTitle = '${_selectedRefs.length} selected';
+        } else if (isEC) {
+          final ecDate = Kenat.now().getEthiopian();
+          pageTitle = '${MonthNames.amharic[ecDate['month']! - 1]} ${ecDate['day']}, ${ecDate['year']}';
+        } else {
+          pageTitle = "Today's Transactions";
+        }
 
         return Scaffold(
           backgroundColor: AppColors.background(context),
@@ -101,9 +115,7 @@ class _TodaysTransactionsPageState extends State<TodaysTransactionsPage> {
                     icon: const Icon(AppIcons.arrow_back_rounded),
                   ),
             title: Text(
-              _isSelecting
-                  ? '${_selectedRefs.length} selected'
-                  : "Today's Transactions",
+              pageTitle,
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.w700,
                 color: _isSelecting
@@ -175,7 +187,7 @@ class _TodaysTransactionsPageState extends State<TodaysTransactionsPage> {
                           ? AppColors.incomeSuccess
                           : AppColors.red,
                       name: _counterparty(tx, isSelfTransfer: isSelfTransfer),
-                      timestamp: _timeLabel(tx),
+                      timestamp: _timeLabel(tx, isEC),
                       selected: selected,
                       onTap: _isSelecting
                           ? () => _toggle(tx)
@@ -208,10 +220,14 @@ String _counterparty(Transaction tx, {bool isSelfTransfer = false}) {
   return isSelfTransfer ? 'YOU' : 'UNKNOWN';
 }
 
-String _timeLabel(Transaction tx) {
+String _timeLabel(Transaction tx, bool isEC) {
   if (tx.time == null || tx.time!.isEmpty) return '';
   try {
     final dt = DateTime.parse(tx.time!).toLocal();
+    if (isEC) {
+      final time = Time.fromGregorian(dt.hour, dt.minute);
+      return time.format({'useGeez': false, 'lang': 'amharic'});
+    }
     final hh = dt.hour.toString().padLeft(2, '0');
     final mm = dt.minute.toString().padLeft(2, '0');
     return '$hh:$mm';

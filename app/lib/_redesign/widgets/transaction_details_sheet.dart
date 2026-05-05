@@ -144,12 +144,6 @@ class _TransactionDetailsSheetState extends State<_TransactionDetailsSheet> {
     final dt = _parseTime(_tx.time);
     if (dt == null) return null;
 
-    final hour = dt.hour;
-    final minute = dt.minute.toString().padLeft(2, '0');
-    final amPm = hour >= 12 ? 'PM' : 'AM';
-    final h12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
-    final timeStr = '$h12:$minute $amPm';
-
     final isEC = context.read<ThemeProvider>().appCalendar == AppCalendarOption.ethiopian;
 
     if (isEC) {
@@ -158,8 +152,17 @@ class _TransactionDetailsSheetState extends State<_TransactionDetailsSheet> {
       final day = ecDate['day'].toString().padLeft(2, '0');
       final currentEcYear = Kenat.now().getEthiopian()['year'];
       final yearSuffix = ecDate['year'] != currentEcYear ? ', ${ecDate['year']}' : '';
+      
+      final time = Time.fromGregorian(dt.hour, dt.minute);
+      final timeStr = time.format({'useGeez': false, 'lang': 'amharic'});
+      
       return '$month $day$yearSuffix · $timeStr';
     } else {
+      final hour = dt.hour;
+      final minute = dt.minute.toString().padLeft(2, '0');
+      final amPm = hour >= 12 ? 'PM' : 'AM';
+      final h12 = hour == 0 ? 12 : (hour > 12 ? hour - 12 : hour);
+      final timeStr = '$h12:$minute $amPm';
       const months = [
         'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
         'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',

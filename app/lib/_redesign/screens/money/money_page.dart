@@ -27,6 +27,10 @@ import 'package:totals/widgets/inline_bank_selector.dart';
 import 'package:totals/_redesign/widgets/transaction_category_sheet.dart';
 import 'package:totals/_redesign/widgets/transaction_details_sheet.dart';
 import 'package:totals/_redesign/widgets/transaction_tile.dart';
+import 'package:kenat/kenat.dart';
+import 'package:provider/provider.dart';
+import 'package:totals/providers/theme_provider.dart';
+import 'package:totals/theme/app_calendar_option.dart';
 import 'package:totals/_redesign/theme/app_icons.dart';
 
 class RedesignMoneyPage extends StatefulWidget {
@@ -910,7 +914,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
 
     return _AnalyticsCategoryChartPage(
       snapshot: snapshot,
-      periodLabel: _formatAnalyticsChartPeriodLabel(
+      periodLabel: _formatAnalyticsChartPeriodLabel(context: context, 
         filter: filter,
         fallbackMonthDate: targetMonth,
         expandedForDateRange: expandedForDateRange,
@@ -1069,7 +1073,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
         if (usesDateRange) {
           return _AnalyticsSupportContext(
             transactions: filteredTransactions,
-            periodLabel: _formatAnalyticsChartPeriodLabel(
+            periodLabel: _formatAnalyticsChartPeriodLabel(context: context, 
               filter: filter,
               fallbackMonthDate:
                   _resolveAnalyticsChartAnchorMonth(filteredTransactions),
@@ -1092,7 +1096,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
             start: targetMonth,
             endExclusive: DateTime(targetMonth.year, targetMonth.month + 1, 1),
           ),
-          periodLabel: _formatAnalyticsChartPeriodLabel(
+          periodLabel: _formatAnalyticsChartPeriodLabel(context: context, 
             filter: filter,
             fallbackMonthDate: targetMonth,
             expandedForDateRange: true,
@@ -1159,7 +1163,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
         if (usesDateRange) {
           return _AnalyticsSupportContext(
             transactions: filteredTransactions,
-            periodLabel: _formatAnalyticsChartPeriodLabel(
+            periodLabel: _formatAnalyticsChartPeriodLabel(context: context, 
               filter: filter,
               fallbackMonthDate:
                   _resolveAnalyticsChartAnchorMonth(filteredTransactions),
@@ -1181,7 +1185,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
             start: targetMonth,
             endExclusive: DateTime(targetMonth.year, targetMonth.month + 1, 1),
           ),
-          periodLabel: _formatAnalyticsChartPeriodLabel(
+          periodLabel: _formatAnalyticsChartPeriodLabel(context: context, 
             filter: filter,
             fallbackMonthDate: targetMonth,
           ),
@@ -1728,7 +1732,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
       amountColor: isCredit ? AppColors.incomeSuccess : AppColors.red,
       name:
           _transactionCounterparty(transaction, isSelfTransfer: isSelfTransfer),
-      timestamp: _transactionTimeLabel(transaction),
+      timestamp: _transactionTimeLabel(transaction, context),
       selected: selected,
       onTap: _isSelecting
           ? () => _toggleSelection(transaction)
@@ -1791,7 +1795,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
       messenger.showSnackBar(
         SnackBar(
           content: Text(
-            'No transactions were recorded on ${_formatDateHeader(day)}.',
+            'No transactions were recorded on ${_formatDateHeader(day, context)}.',
           ),
         ),
       );
@@ -1921,7 +1925,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
                   categoryMode: filter.mode,
                   constrainSeriesToAnchorMonth: false,
                 ),
-                periodLabel: _formatAnalyticsChartPeriodLabel(
+                periodLabel: _formatAnalyticsChartPeriodLabel(context: context, 
                   filter: filter,
                   fallbackMonthDate:
                       _resolveAnalyticsChartAnchorMonth(filteredTransactions),
@@ -2044,7 +2048,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
                   categoryMode: filter.mode,
                   constrainSeriesToAnchorMonth: false,
                 ),
-                periodLabel: _formatAnalyticsChartPeriodLabel(
+                periodLabel: _formatAnalyticsChartPeriodLabel(context: context, 
                   filter: filter,
                   fallbackMonthDate:
                       _resolveAnalyticsChartAnchorMonth(filteredTransactions),
@@ -2557,7 +2561,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
     String? lastDateKey;
     for (final txn in filtered) {
       final dt = _parseTransactionTime(txn.time);
-      final key = dt != null ? _formatDateHeader(dt) : 'Unknown Date';
+      final key = dt != null ? _formatDateHeader(dt, context) : 'Unknown Date';
       if (key != lastDateKey) {
         flatItems.add(key);
         lastDateKey = key;
@@ -2720,7 +2724,7 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
     String? lastDateKey;
     for (final transaction in pageTransactions) {
       final dt = _parseTransactionTime(transaction.time);
-      final dateKey = dt != null ? _formatDateHeader(dt) : 'Unknown Date';
+      final dateKey = dt != null ? _formatDateHeader(dt, context) : 'Unknown Date';
       if (dateKey != lastDateKey) {
         flatItems.add(dateKey);
         lastDateKey = dateKey;
@@ -3457,7 +3461,16 @@ const _months = [
   'Dec',
 ];
 
-String _formatDateHeader(DateTime date) {
+String _formatDateHeader(DateTime date, [BuildContext? context]) {
+  if (context != null) {
+    try {
+      final isEC = Provider.of<ThemeProvider>(context, listen: false).appCalendar == AppCalendarOption.ethiopian;
+      if (isEC) {
+        final ecDate = Kenat.fromGregorian(date.year, date.month, date.day).getEthiopian();
+        return '${MonthNames.amharic[ecDate['month']! - 1]} ${ecDate['day']}, ${ecDate['year']}';
+      }
+    } catch (_) {}
+  }
   return '${_months[date.month - 1]} ${date.day}, ${date.year}';
 }
 
@@ -3687,9 +3700,19 @@ String _transactionCounterparty(Transaction transaction,
   return isSelfTransfer ? 'YOU' : 'UNKNOWN';
 }
 
-String _transactionTimeLabel(Transaction transaction) {
+String _transactionTimeLabel(Transaction transaction, [BuildContext? context]) {
   final dt = _parseTransactionTime(transaction.time);
   if (dt == null) return 'Unknown time';
+  
+  if (context != null) {
+    try {
+      final isEC = Provider.of<ThemeProvider>(context, listen: false).appCalendar == AppCalendarOption.ethiopian;
+      if (isEC) {
+        final time = Time.fromGregorian(dt.hour, dt.minute);
+        return time.format({'useGeez': false, 'lang': 'amharic'});
+      }
+    } catch (_) {}
+  }
   final hh = dt.hour.toString().padLeft(2, '0');
   final mm = dt.minute.toString().padLeft(2, '0');
   return '$hh:$mm';
@@ -3726,6 +3749,7 @@ String _formatMonthYear(DateTime date) {
 }
 
 String _formatAnalyticsChartPeriodLabel({
+  BuildContext? context,
   required _AnalyticsHeatmapFilter filter,
   required DateTime fallbackMonthDate,
   bool expandedForDateRange = false,
@@ -3733,17 +3757,17 @@ String _formatAnalyticsChartPeriodLabel({
   final startDate = filter.startDate;
   final endDate = filter.endDate;
   if (startDate != null && endDate != null) {
-    return '${_formatDateHeader(startDate)} - ${_formatDateHeader(endDate)}';
+    return '${_formatDateHeader(startDate, context)} - ${_formatDateHeader(endDate, context)}';
   }
   if (startDate != null) {
     return expandedForDateRange
-        ? 'Since ${_formatDateHeader(startDate)}'
-        : _formatDateHeader(startDate);
+        ? 'Since ${_formatDateHeader(startDate, context)}'
+        : _formatDateHeader(startDate, context);
   }
   if (endDate != null) {
     return expandedForDateRange
-        ? 'Until ${_formatDateHeader(endDate)}'
-        : _formatDateHeader(endDate);
+        ? 'Until ${_formatDateHeader(endDate, context)}'
+        : _formatDateHeader(endDate, context);
   }
 
   if (!expandedForDateRange) {
@@ -3752,7 +3776,7 @@ String _formatAnalyticsChartPeriodLabel({
 
   final monthEnd =
       DateTime(fallbackMonthDate.year, fallbackMonthDate.month + 1, 0);
-  return '${_formatDateHeader(fallbackMonthDate)} - ${_formatDateHeader(monthEnd)}';
+  return '${_formatDateHeader(fallbackMonthDate, context)} - ${_formatDateHeader(monthEnd, context)}';
 }
 
 String _formatAnalyticsSpendingPeriodLabel(
@@ -3787,7 +3811,16 @@ Color _analyticsPaletteColor(int index) {
   return palette[index % palette.length];
 }
 
-String _formatLedgerTime(DateTime dt) {
+String _formatLedgerTime(DateTime dt, [BuildContext? context]) {
+  if (context != null) {
+    try {
+      final isEC = Provider.of<ThemeProvider>(context, listen: false).appCalendar == AppCalendarOption.ethiopian;
+      if (isEC) {
+        final time = Time.fromGregorian(dt.hour, dt.minute);
+        return time.format({'useGeez': false, 'lang': 'amharic'});
+      }
+    } catch (_) {}
+  }
   final hour = dt.hour;
   final minute = dt.minute;
   final period = hour >= 12 ? 'PM' : 'AM';
@@ -9459,7 +9492,7 @@ class _LedgerHeaderSummary extends StatelessWidget {
                 style: labelStyle,
               ),
               TextSpan(
-                text: _formatDateHeader(startingDate!),
+                text: _formatDateHeader(startingDate!, context),
                 style: valueStyle,
               ),
             ],
@@ -9865,7 +9898,7 @@ class _HeatmapDayLedgerPage extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Text(
-              _formatDateHeader(date),
+              _formatDateHeader(date, context),
               style: TextStyle(
                 color: AppColors.textPrimary(context),
                 fontSize: 22,
@@ -10056,7 +10089,7 @@ class _LedgerTransactionEntry extends StatelessWidget {
     final bankName = _bankLabel(transaction.bankId);
 
     final dt = _parseTransactionTime(transaction.time);
-    final timeStr = dt != null ? _formatLedgerTime(dt) : '';
+    final timeStr = dt != null ? _formatLedgerTime(dt, context) : '';
 
     final parsedBalance = _parseRunningBalance(transaction.currentBalance);
     final effectiveBalance = parsedBalance ?? derivedBalance;
@@ -12152,7 +12185,7 @@ class _ReparseAccountSheetState extends State<_ReparseAccountSheet> {
                           Text(
                             _startDate == null
                                 ? 'All available bank messages'
-                                : _formatDateHeader(_startDate!),
+                                : _formatDateHeader(_startDate!, context),
                             style: TextStyle(
                               color: AppColors.textPrimary(context),
                               fontSize: 14,

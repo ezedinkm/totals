@@ -605,9 +605,52 @@ class RedesignMoneyPageState extends State<RedesignMoneyPage>
   }
 
   void _shiftAnalyticsHeatmapPeriod(DateTime currentFocusMonth, int delta) {
-    final nextFocus = _analyticsHeatmapView == _AnalyticsHeatmapView.daily
-        ? DateTime(currentFocusMonth.year, currentFocusMonth.month + delta, 1)
-        : DateTime(currentFocusMonth.year + delta, currentFocusMonth.month, 1);
+    DateTime nextFocus;
+    try {
+      final isEC =
+          context.read<ThemeProvider>().appCalendar == AppCalendarOption.ethiopian;
+      if (isEC) {
+        final ec = Kenat.fromGregorian(
+          currentFocusMonth.year,
+          currentFocusMonth.month,
+          currentFocusMonth.day,
+        ).getEthiopian();
+        if (_analyticsHeatmapView == _AnalyticsHeatmapView.daily) {
+          var y = ec['year']!;
+          var m = ec['month']! + delta;
+          while (m > 13) {
+            m -= 13;
+            y++;
+          }
+          while (m < 1) {
+            m += 13;
+            y--;
+          }
+          final gc = Kenat.fromEthiopian(y, m, 1).getGregorian();
+          nextFocus = DateTime(gc['year']!, gc['month']!, gc['day']!);
+        } else {
+          final gc =
+              Kenat.fromEthiopian(ec['year']! + delta, ec['month']!, 1).getGregorian();
+          nextFocus = DateTime(gc['year']!, gc['month']!, gc['day']!);
+        }
+      } else {
+        if (_analyticsHeatmapView == _AnalyticsHeatmapView.daily) {
+          nextFocus = DateTime(
+              currentFocusMonth.year, currentFocusMonth.month + delta, 1);
+        } else {
+          nextFocus = DateTime(
+              currentFocusMonth.year + delta, currentFocusMonth.month, 1);
+        }
+      }
+    } catch (_) {
+      if (_analyticsHeatmapView == _AnalyticsHeatmapView.daily) {
+        nextFocus =
+            DateTime(currentFocusMonth.year, currentFocusMonth.month + delta, 1);
+      } else {
+        nextFocus =
+            DateTime(currentFocusMonth.year + delta, currentFocusMonth.month, 1);
+      }
+    }
     setState(() {
       _analyticsHeatmapFocusMonth = nextFocus;
     });
@@ -5224,12 +5267,16 @@ class _AnalyticsHeatmapCardState extends State<_AnalyticsHeatmapCard> {
   @override
   void didUpdateWidget(covariant _AnalyticsHeatmapCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    final nextVisibleMonth = _normalizeVisibleMonth(widget.focusMonth);
-    if (!_isSameVisibleMonth(_visibleMonth, nextVisibleMonth)) {
-      _visibleMonth = nextVisibleMonth;
-      if (_pageController.hasClients &&
-          (_pageController.page?.round() ?? 1) != 1) {
-        _pageController.jumpToPage(1);
+    if (widget.focusMonth != oldWidget.focusMonth) {
+      final nextVisibleMonth = _normalizeVisibleMonth(widget.focusMonth);
+      if (!_isSameVisibleMonth(_visibleMonth, nextVisibleMonth)) {
+        setState(() {
+          _visibleMonth = nextVisibleMonth;
+        });
+        if (_pageController.hasClients &&
+            (_pageController.page?.round() ?? 1) != 1) {
+          _pageController.jumpToPage(1);
+        }
       }
     }
   }

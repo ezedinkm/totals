@@ -17,6 +17,7 @@ import 'package:totals/services/data_export_import_service.dart';
 import 'package:totals/services/sms_config_service.dart';
 import 'package:totals/_redesign/theme/app_icons.dart';
 import 'package:totals/theme/app_font_option.dart';
+import 'package:totals/theme/app_calendar_option.dart';
 
 // ── Support links ───────────────────────────────────────────────────────────
 Future<void> _openSupportLink() async {
@@ -538,6 +539,131 @@ class _RedesignSettingsPageState extends State<RedesignSettingsPage> {
     await themeProvider.setAppFont(pickedFont);
   }
 
+  Future<void> _showCalendarSheet(ThemeProvider themeProvider) async {
+    final options = themeProvider.availableAppCalendars;
+    AppCalendarOption selectedCalendar = themeProvider.appCalendar;
+
+    final pickedCalendar = await showModalBottomSheet<AppCalendarOption>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (sheetCtx) => StatefulBuilder(
+        builder: (sheetCtx, setSheetState) {
+          return Container(
+            padding: EdgeInsets.fromLTRB(
+              20,
+              0,
+              20,
+              20 +
+                  MediaQuery.of(sheetCtx).viewInsets.bottom +
+                  MediaQuery.of(sheetCtx).padding.bottom,
+            ),
+            decoration: BoxDecoration(
+              color: AppColors.cardColor(sheetCtx),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(20)),
+            ),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      margin: const EdgeInsets.only(top: 12, bottom: 16),
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: AppColors.slate400,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  Text(
+                    'Calendar',
+                    style: Theme.of(sheetCtx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary(sheetCtx),
+                        ),
+                  ),
+                  const SizedBox(height: 16),
+                  for (final option in options) ...[
+                    RadioListTile<AppCalendarOption>(
+                      value: option,
+                      groupValue: selectedCalendar,
+                      activeColor: AppColors.primaryLight,
+                      contentPadding: EdgeInsets.zero,
+                      title: Text(
+                        option.label,
+                        style: Theme.of(sheetCtx).textTheme.titleMedium?.copyWith(
+                              color: AppColors.textPrimary(sheetCtx),
+                              fontWeight: FontWeight.w700,
+                            ),
+                      ),
+                      onChanged: (value) {
+                        if (value == null) return;
+                        setSheetState(() => selectedCalendar = value);
+                      },
+                    ),
+                  ],
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.of(sheetCtx).pop(),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(
+                              color: AppColors.borderColor(sheetCtx),
+                            ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: Text(
+                            'Cancel',
+                            style: TextStyle(
+                              color: AppColors.textSecondary(sheetCtx),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () =>
+                              Navigator.of(sheetCtx).pop(selectedCalendar),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryDark,
+                            foregroundColor: AppColors.white,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text(
+                            'Apply',
+                            style: TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+
+    if (!mounted || pickedCalendar == null) return;
+    await themeProvider.setAppCalendar(pickedCalendar);
+  }
+
   // ── Export / Import ─────────────────────────────────────────────────────
 
   Future<void> _exportData() async {
@@ -925,6 +1051,32 @@ class _RedesignSettingsPageState extends State<RedesignSettingsPage> {
                   ],
                 ),
                 onTap: () => _showFontSheet(themeProvider),
+              ),
+
+              _SettingTile(
+                icon: Icons.calendar_today_rounded,
+                iconColor: AppColors.primaryLight,
+                title: 'Calendar',
+                subtitle: 'Switch between Gregorian and Ethiopian calendars',
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      themeProvider.appCalendarLabel,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: AppColors.textSecondary(context),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Icon(
+                      AppIcons.chevron_right,
+                      color: AppColors.textTertiary(context),
+                      size: 20,
+                    ),
+                  ],
+                ),
+                onTap: () => _showCalendarSheet(themeProvider),
               ),
 
               // if (!_isLoadingRedesign)

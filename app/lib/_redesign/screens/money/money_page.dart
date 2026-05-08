@@ -5399,6 +5399,7 @@ class _AnalyticsHeatmapCardState extends State<_AnalyticsHeatmapCard> {
   static const double _weekdayHeaderSpacing = 8;
   static const double _sectionFooterSpacing = 10;
   static const double _pageGridHorizontalInset = 12;
+  static const double _viewportOverflowSlack = 2;
 
   late final PageController _pageController;
   late DateTime _visibleMonth;
@@ -5595,7 +5596,10 @@ class _AnalyticsHeatmapCardState extends State<_AnalyticsHeatmapCard> {
           (contentWidth - (spacing * (crossCount - 1))) / crossCount;
       final cellHeight = cellWidth / aspectRatio;
       gridHeight = (cellHeight * rowCount) + (spacing * (rowCount - 1));
-      return _weekdayHeaderHeight + _weekdayHeaderSpacing + gridHeight;
+      return _weekdayHeaderHeight +
+          _weekdayHeaderSpacing +
+          gridHeight +
+          _viewportOverflowSlack;
     } else {
       const crossCount = 4;
       const spacing = 6.0;
@@ -5605,7 +5609,7 @@ class _AnalyticsHeatmapCardState extends State<_AnalyticsHeatmapCard> {
           (contentWidth - (spacing * (crossCount - 1))) / crossCount;
       final cellHeight = cellWidth / aspectRatio;
       gridHeight = (cellHeight * rowCount) + (spacing * (rowCount - 1));
-      return gridHeight;
+      return gridHeight + _viewportOverflowSlack;
     }
   }
 
@@ -5694,18 +5698,14 @@ class _AnalyticsHeatmapCardState extends State<_AnalyticsHeatmapCard> {
                           padding: const EdgeInsets.symmetric(
                             horizontal: _pageGridHorizontalInset,
                           ),
-                          child: Column(
-                            children: [
-                              _buildAnimatedHeatmapPageBody(
-                                context: context,
-                                pageMonth: pageMonth,
-                                now: now,
-                                valuesByBucket: valuesByBucket,
-                                maxMagnitude: maxMagnitude,
-                                onDaySelected:
-                                    index == 1 ? widget.onDaySelected : null,
-                              ),
-                            ],
+                          child: _buildAnimatedHeatmapPageBody(
+                            context: context,
+                            pageMonth: pageMonth,
+                            now: now,
+                            valuesByBucket: valuesByBucket,
+                            maxMagnitude: maxMagnitude,
+                            onDaySelected:
+                                index == 1 ? widget.onDaySelected : null,
                           ),
                         ),
                       );
@@ -8685,7 +8685,8 @@ class _AnalyticsBarChartCard extends StatelessWidget {
 
   double _pageHeight(_AnalyticsBarSeries series) {
     final hasData = series.totalsByBucket.fold<double>(0.0, math.max) > 0.001;
-    return hasData ? 354 : 276;
+    // Small safety margin to avoid label/legend clipping on some text scales.
+    return hasData ? 362 : 282;
   }
 
   Widget _buildPage(BuildContext context, _AnalyticsBarSeries series) {

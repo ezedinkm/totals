@@ -3961,8 +3961,38 @@ String _formatFullMonthName(DateTime date, [BuildContext? context]) {
   return DateFormat('MMMM').format(date);
 }
 
-String _analyticsWeekdayLabel(int index) {
-  const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+List<String> _analyticsWeekdayLabels(BuildContext context, {bool short = false}) {
+  final isEC =
+      Provider.of<ThemeProvider>(context, listen: false).appCalendar ==
+      AppCalendarOption.ethiopian;
+  if (!isEC) {
+    return short
+        ? const ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+        : const [
+            'Monday',
+            'Tuesday',
+            'Wednesday',
+            'Thursday',
+            'Friday',
+            'Saturday',
+            'Sunday',
+          ];
+  }
+
+  // Build labels from Kenat directly, Monday-first to match chart layout.
+  final mondayAnchor = DateTime(2024, 1, 1); // Monday
+  final names = List<String>.generate(7, (index) {
+    final dt = mondayAnchor.add(Duration(days: index));
+    return Kenat.fromGregorian(dt.year, dt.month, dt.day).getWeekdayName();
+  });
+  if (!short) return names;
+  return names
+      .map((name) => name.substring(0, name.length >= 3 ? 3 : name.length))
+      .toList(growable: false);
+}
+
+String _analyticsWeekdayLabel(BuildContext context, int index) {
+  final labels = _analyticsWeekdayLabels(context);
   return labels[index.clamp(0, labels.length - 1)];
 }
 
@@ -6890,7 +6920,7 @@ class _AnalyticsWeekdayHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const labels = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final labels = _analyticsWeekdayLabels(context, short: true);
     return Row(
       children: labels
           .map(
@@ -8349,7 +8379,17 @@ class _AnalyticsBarChartCard extends StatelessWidget {
       context: context,
     );
     final yearlyLabelsDefault = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    final weeklyLabels = isEC ? ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    final weeklyLabels = isEC
+        ? [
+            DaysOfWeek.amharic[1], // Monday
+            DaysOfWeek.amharic[2], // Tuesday
+            DaysOfWeek.amharic[3], // Wednesday
+            DaysOfWeek.amharic[4], // Thursday
+            DaysOfWeek.amharic[5], // Friday
+            DaysOfWeek.amharic[6], // Saturday
+            DaysOfWeek.amharic[0], // Sunday
+          ].map((d) => d.substring(0, d.length >= 3 ? 3 : d.length)).toList()
+        : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
     final monthlyLabels = ['W1', 'W2', 'W3', 'W4', 'W5'];
     final yearlyLabels = isEC 
         ? MonthNames.amharic.map((m) => m.substring(0, 3)).toList()
@@ -9176,7 +9216,7 @@ class _AnalyticsSpendingByDayCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final maxValue = snapshot.weekdayExpenseTotals.fold<double>(0.0, math.max);
-    final peakDay = _analyticsWeekdayLabel(snapshot.peakWeekdayIndex);
+    final peakDay = _analyticsWeekdayLabel(context, snapshot.peakWeekdayIndex);
     final periodLabel = snapshot.periodLabel;
     final periodKey = snapshot.periodKey;
     final infoText = maxValue > 0 ? 'Peak: $peakDay' : snapshot.emptyLabel;
@@ -9385,7 +9425,9 @@ class _AnalyticsSpendingByDayCard extends StatelessWidget {
                                           ? FontWeight.w700
                                           : FontWeight.w600,
                                     ),
-                                    child: Text(_analyticsWeekdayLabel(index)),
+                                    child: Text(
+                                      _analyticsWeekdayLabel(context, index),
+                                    ),
                                   ),
                                 ],
                               ),

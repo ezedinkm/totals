@@ -32,6 +32,13 @@ jobs:
         working-directory: app
         run: flutter pub get
 
+      - name: Patch another_telephony compileSdk
+        run: |
+          find $HOME/.pub-cache -name "build.gradle" -path "*another_telephony*" \
+            -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 37/g' {} \;
+          find $HOME/.pub-cache -name "build.gradle" -path "*another_telephony*" \
+            -exec grep -l "compileSdk" {} \; | xargs -I{} grep "compileSdk" {}
+
       - name: Build release APK
         working-directory: app
         run: flutter build apk --release

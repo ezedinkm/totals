@@ -38,8 +38,8 @@ jobs:
             echo "Patching: $f"
             # Fix compileSdk
             sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 37/g' "$f"
-            # Fix Kotlin jvmTarget
-            sed -i "s/jvmTarget = '[^']*'/jvmTarget = '17'/g" "$f"
+            # Fix Kotlin jvmTarget (plugin uses double quotes)
+            sed -i 's/jvmTarget = "[^"]*"/jvmTarget = "17"/g' "$f"
             # Fix Java sourceCompatibility / targetCompatibility
             sed -i 's/sourceCompatibility JavaVersion\.[A-Z_0-9]*/sourceCompatibility JavaVersion.VERSION_17/g' "$f"
             sed -i 's/targetCompatibility JavaVersion\.[A-Z_0-9]*/targetCompatibility JavaVersion.VERSION_17/g' "$f"

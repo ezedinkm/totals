@@ -13240,8 +13240,14 @@ class _ReparseScopeTile extends StatelessWidget {
           Switch.adaptive(
             value: value,
             onChanged: onChanged,
-            activeThumbColor: AppColors.primaryDark,
-            activeTrackColor: AppColors.primaryDark.withValues(alpha: 0.32),
+            thumbColor: WidgetStateProperty.resolveWith<Color?>((states) {
+              if (states.contains(WidgetState.selected)) return AppColors.primaryDark;
+              return null;
+            }),
+            trackColor: WidgetStateProperty.resolveWith<Color?>((states) {
+              if (states.contains(WidgetState.selected)) return AppColors.primaryDark.withValues(alpha: 0.32);
+              return null;
+            }),
           ),
         ],
       ),

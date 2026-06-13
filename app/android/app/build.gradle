@@ -56,12 +56,12 @@ android {
     productFlavors {
         stable {
             dimension "app"
-            resValue "string", "app_name", "totals"
+            resValue "string", "app_name", "My Banks"
         }
         qa {
             dimension "app"
             applicationIdSuffix ".test"
-            resValue "string", "app_name", "totals-test"
+            resValue "string", "app_name", "My Banks (Test)"
         }
     }
 

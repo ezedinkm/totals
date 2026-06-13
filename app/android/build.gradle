@@ -26,6 +26,21 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
+// Force all Flutter plugin subprojects to compile against a modern SDK
+// so transitive deps like androidx.fragment:1.7+ (requires compileSdk 34+) work.
+subprojects {
+    afterEvaluate { proj ->
+        if (proj.hasProperty('android')) {
+            def android = proj.extensions.findByName('android')
+            if (android != null) {
+                try {
+                    android.compileSdkVersion(37)
+                } catch (ignored) {}
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

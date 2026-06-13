@@ -25,6 +25,7 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
+          flutter-version: "3.32.8"
           channel: stable
           cache: true
 
@@ -36,8 +37,8 @@ jobs:
         run: |
           find $HOME/.pub-cache -name "build.gradle" -path "*another_telephony*" | while read f; do
             echo "Patching: $f"
-            # Fix compileSdk
-            sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 37/g' "$f"
+            # Fix compileSdk (needs >=34 for transitive deps)
+            sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 35/g' "$f"
             # Fix Kotlin jvmTarget (plugin uses double quotes)
             sed -i 's/jvmTarget = "[^"]*"/jvmTarget = "17"/g' "$f"
             # Fix Java sourceCompatibility / targetCompatibility

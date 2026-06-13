@@ -26,17 +26,6 @@ subprojects {
     project.evaluationDependsOn(':app')
 }
 
-// Force all Flutter plugin library subprojects to compile against SDK 37
-// so transitive deps like androidx.fragment:1.7+ (requires compileSdk 34+) work.
-// Uses lazy pluginManager.withPlugin to avoid "already evaluated" errors in Gradle 9.
-subprojects {
-    pluginManager.withPlugin('com.android.library') {
-        android {
-            compileSdkVersion 37
-        }
-    }
-}
-
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

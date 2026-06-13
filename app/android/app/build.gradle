@@ -24,7 +24,7 @@ if (flutterVersionName == null) {
 
 android {
     namespace "com.example.offline_gateway"
-    compileSdkVersion 37
+    compileSdkVersion 35
     ndkVersion "27.0.12077973"
 
     compileOptions {

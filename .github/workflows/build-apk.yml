@@ -32,12 +32,20 @@ jobs:
         working-directory: app
         run: flutter pub get
 
-      - name: Patch another_telephony compileSdk
+      - name: Patch another_telephony build.gradle
         run: |
-          find $HOME/.pub-cache -name "build.gradle" -path "*another_telephony*" \
-            -exec sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 37/g' {} \;
-          find $HOME/.pub-cache -name "build.gradle" -path "*another_telephony*" \
-            -exec grep -l "compileSdk" {} \; | xargs -I{} grep "compileSdk" {}
+          find $HOME/.pub-cache -name "build.gradle" -path "*another_telephony*" | while read f; do
+            echo "Patching: $f"
+            # Fix compileSdk
+            sed -i 's/compileSdkVersion [0-9]*/compileSdkVersion 37/g' "$f"
+            # Fix Kotlin jvmTarget
+            sed -i "s/jvmTarget = '[^']*'/jvmTarget = '17'/g" "$f"
+            # Fix Java sourceCompatibility / targetCompatibility
+            sed -i 's/sourceCompatibility JavaVersion\.[A-Z_0-9]*/sourceCompatibility JavaVersion.VERSION_17/g' "$f"
+            sed -i 's/targetCompatibility JavaVersion\.[A-Z_0-9]*/targetCompatibility JavaVersion.VERSION_17/g' "$f"
+            echo "--- After patching ---"
+            grep -E "compileSdk|jvmTarget|Compatibility" "$f" || true
+          done
 
       - name: Build release APK
         working-directory: app
